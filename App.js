@@ -68,10 +68,10 @@ export default function App() {
           },
         })}
       >
-        <Tab.Screen name="Home" component={createStack(Home, "Home")}options={{ title: 'Home' }}/>
-        <Tab.Screen name="Calendar" component={createStack(Calendar, "Calendar")}options={{ title: 'Calendar' }}/>
-        <Tab.Screen name="Library" component={createStack(Library, "Library")}options={{ title: 'Library' }}/>
-        <Tab.Screen name="MyPage" component={createStack(MyPage, "MyPage")}options={{ title: 'MyPage' }}/>
+        <Tab.Screen name="Calendar" component={createStack(Calendar, "Calendar")} options={{ title: 'Calendar' }}/>
+        <Tab.Screen name="Home" component={createStack(Home, "Home")} options={{ title: 'Home' }}/>
+        <Tab.Screen name="Library" component={createStack(Library, "Library")} options={{ title: 'Library' }}/>
+        <Tab.Screen name="MyPage" component={createStack(MyPage, "MyPage")} options={{ title: 'MyPage' }}/>
       </Tab.Navigator>
     </NavigationContainer>
   );
