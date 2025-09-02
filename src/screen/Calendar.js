@@ -1,6 +1,8 @@
 import React, { use, useEffect, useState, useCallback, useRef, useMemo } from "react";
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions, Easing } from "react-native";
+import { View, Text, StyleSheet, TouchableOpacity, ScrollView, Animated, Dimensions, Easing, Modal, TextInput, Keyboard, TouchableWithoutFeedback } from "react-native";
 import { GestureHandlerRootView, PanGestureHandler } from "react-native-gesture-handler";
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { Ionicons } from '@expo/vector-icons';
 
 export function Calendar() {
   const getDate = new Date();
@@ -14,6 +16,11 @@ export function Calendar() {
   const [currentMonth, setCurrentMonth] = useState(month - 1);
   const week = ['일', '월', '화', '수', '목', '금', '토'];
   const [selectDate, setSelectDate] = useState(today);
+  const [isModalVisible,setIsModalVisible] = useState(false);
+  
+  // 모달 관련 state
+  const [modalActiveTab, setModalActiveTab] = useState('식단');
+  const [modalContent, setModalContent] = useState('');
   
   const screenHeight = Dimensions.get('window').height;
   const screenWidth = Dimensions.get('window').width;
@@ -42,7 +49,96 @@ export function Calendar() {
   const horizontalScrollRef = useRef(null);
   const lastScrollTime = useRef(0);
   const [activeTab, setActiveTab] = useState('식단');
+  const [recordList,setRecordList] = useState([]);
 
+  // 날짜 포맷팅 함수
+  const formatDateForDisplay = (dateString) => {
+    const [year, month, day] = dateString.split('-');
+    return `${year}년 ${month}월 ${day}일`;
+  };
+
+  // 모달 열기 함수
+  const openModal = () => {
+    setModalActiveTab('식단');
+    setModalContent('');
+    setIsModalVisible(true);
+  };
+
+  // 모달 닫기 함수
+  const closeModal = () => {
+    setIsModalVisible(false);
+    setModalActiveTab('식단');
+    setModalContent('');
+    loadTodata();
+  };
+
+  // 키보드 닫기 함수
+  const dismissKeyboard = () => {
+    Keyboard.dismiss();
+  };
+
+  // 저장 함수
+const saveModalData = async () => {
+  if (!modalContent.trim()) return;
+  
+  try {
+    // 키보드 먼저 닫기
+    Keyboard.dismiss();
+    
+    const data = {
+      type: modalActiveTab,
+      content: modalContent,
+      date: selectDate,
+      timestamp: new Date().toISOString()
+    };
+    
+
+    
+    // 현재 년도/월 계산
+    
+    const storageKey = `CALENDAR_${yearArr[currentYearIndex]}_${currentMonth}`;
+    
+    // 기존 데이터 로드
+    const existingData = await AsyncStorage.getItem(storageKey);
+    let monthRecords = existingData ? JSON.parse(existingData) : [];
+    
+    // 새 기록 추가
+    const newRecord = {
+      id: Date.now() + Math.random(),
+      ...data,
+      day: parseInt(selectDate.split('-')[2])
+    };
+    
+    monthRecords.push(newRecord);
+    
+    // 날짜순 정렬
+    monthRecords.sort((a, b) => a.day - b.day);
+    
+    // 저장
+    await AsyncStorage.setItem(storageKey, JSON.stringify(monthRecords));
+    
+    console.log('✅ 저장 완료!');
+    closeModal();
+  } catch (error) {
+    console.error('저장 실패:', error);
+  }
+};
+
+const loadTodata = async () => {
+  try {
+    const storageKey = `CALENDAR_${yearArr[currentYearIndex]}_${currentMonth}`;
+    const stored = await AsyncStorage.getItem(storageKey);
+    const parsed = stored ? JSON.parse(stored) : [];
+    console.log("📌 불러온 데이터:", parsed);
+    setRecordList(parsed);
+  } catch (error) {
+    console.error("불러오기 실패:", error);
+    setRecordList([]); // fallback
+  }
+};
+
+
+// useEffect(()=>{},[recordList])
 
   const initData = useCallback(() => {
     const newCalData = yearArr.map((y) => {
@@ -95,6 +191,7 @@ export function Calendar() {
     } else {
       setNextMonthData(null);
     }
+    loadTodata()
   }, [currentYearIndex, currentMonth]);
 
   useEffect(() => {
@@ -185,8 +282,7 @@ export function Calendar() {
         } else if (dayIndex < daysInMonth) {
           const dayData = monthData[dayIndex];
           const fullDate = dayData.year + '-' + dayData.month + '-' + dayData.date
-          const isSelected = dayData.year + '-' + dayData.month + '-' + dayData.date === selectDate;
-          console.log(dayData.sun, dayData.sat);
+          const isSelected = dayData.year + '-' + dayData.month + '-' + dayData.date === selectDate;          
           weekDays.push(
             <TouchableOpacity 
               key={`day-${dayIndex}`} 
@@ -503,132 +599,285 @@ export function Calendar() {
       friction: 8,
     }).start();
   };
-
+const deleteRecord = async (recordId, date) => {
+  try {
+    const [year, month] = date.split('-').map(Number);
+    const storageKey = `CALENDAR_${year}_${month-1}`;
+    
+    // 해당 월 데이터 로드
+    const existingData = await AsyncStorage.getItem(storageKey);
+    
+    if (!existingData) {
+      console.log('해당 월에 데이터가 없습니다.');
+      return false;
+    }
+    
+    const monthRecords = JSON.parse(existingData);
+    
+    // 해당 ID 기록 삭제
+    const updatedRecords = monthRecords.filter(record => record.id !== recordId);
+    
+    // 삭제된 기록이 있는지 확인
+    if (updatedRecords.length === monthRecords.length) {
+      console.log('삭제할 기록을 찾을 수 없습니다.');
+      return false;
+    }
+    
+    // 업데이트된 데이터 저장
+    await AsyncStorage.setItem(storageKey, JSON.stringify(updatedRecords));
+    
+    console.log(`✅ 기록 삭제됨 - ID: ${recordId}`);
+    loadTodata()
+  } catch (error) {
+    console.error('기록 삭제 실패:', error);
+    return false;
+  }
+};
   useEffect(() => {initData()},[initData])
-  return (
-    <GestureHandlerRootView style={styles.container}>
-      <View style={styles.header}>
-        <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
-          <Text style={styles.navButtonText}>{'<'}</Text>
-        </TouchableOpacity>
-        
-        <Text style={styles.title}>
-          {yearArr[currentYearIndex]}년 {currentMonth + 1}월
-        </Text>
-        
-        <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
-          <Text style={styles.navButtonText}>{'>'}</Text>
-        </TouchableOpacity>
-      </View>
-
-      {!isBottomSheetExpanded && (
-        <View style={styles.weekHeader}>
-          {week.map((dayName, index) => (
-            <Text key={index} style={styles.weekHeaderText}>
-              {dayName}
-            </Text>
-          ))}
+  
+  return (    
+    <>
+      <GestureHandlerRootView style={styles.container}>
+        <View style={styles.header}>
+          <TouchableOpacity onPress={goToPreviousMonth} style={styles.navButton}>
+            <Text style={styles.navButtonText}>{'<'}</Text>
+          </TouchableOpacity>
+          
+          <Text style={styles.title}>
+            {yearArr[currentYearIndex]}년 {currentMonth + 1}월
+          </Text>
+          
+          <TouchableOpacity onPress={goToNextMonth} style={styles.navButton}>
+            <Text style={styles.navButtonText}>{'>'}</Text>
+          </TouchableOpacity>
         </View>
-      )}
 
-      {isBottomSheetExpanded ? (
-        // 바텀시트 확장 시 - 가로 스크롤 캘린더
-        <View style={styles.horizontalCalendarWrapper}>
-          {renderHorizontalCalendar()}
-        </View>
-      ) : (
-        // 바텀시트 축소 시 - 기존 그리드 캘린더  
+        {!isBottomSheetExpanded && (
+          <View style={styles.weekHeader}>
+            {week.map((dayName, index) => (
+              <Text key={index} style={styles.weekHeaderText}>
+                {dayName}
+              </Text>
+            ))}
+          </View>
+        )}
+
+        {isBottomSheetExpanded ? (
+          // 바텀시트 확장 시 - 가로 스크롤 캘린더
+          <View style={styles.horizontalCalendarWrapper}>
+            {renderHorizontalCalendar()}
+          </View>
+        ) : (
+          // 바텀시트 축소 시 - 기존 그리드 캘린더  
+          <PanGestureHandler
+            onGestureEvent={handleCalendarSwipe}
+            onHandlerStateChange={(event) => {
+              if (event.nativeEvent.state === 5) {
+                handleCalendarSwipeEnd(event);
+              }
+            }}
+          >
+            <View style={styles.calendarContainer}>
+              {/* 이전 달 */}
+              <Animated.View 
+                style={[
+                  styles.monthView,
+                  {
+                    transform: [{ translateX: Animated.subtract(slideAnim, screenWidth) }]
+                  }
+                ]}
+              >
+                {prevMonthGrid}
+              </Animated.View>
+              
+              {/* 현재 달 */}
+              <Animated.View 
+                style={[
+                  styles.monthView,
+                  {
+                    transform: [{ translateX: slideAnim }]
+                  }
+                ]}
+              >
+                {currentMonthGrid}
+              </Animated.View>
+              
+              {/* 다음 달 */}
+              <Animated.View 
+                style={[
+                  styles.monthView,
+                  {
+                    transform: [{ translateX: Animated.add(slideAnim, screenWidth) }]
+                  }
+                ]}
+              >
+                {nextMonthGrid}
+              </Animated.View>
+            </View>
+          </PanGestureHandler>
+        )}
+
         <PanGestureHandler
-          onGestureEvent={handleCalendarSwipe}
+          onGestureEvent={handleBottomSheetGesture}
           onHandlerStateChange={(event) => {
             if (event.nativeEvent.state === 5) {
-              handleCalendarSwipeEnd(event);
+              handleBottomSheetEnd(event);
             }
           }}
         >
-          <View style={styles.calendarContainer}>
-            {/* 이전 달 */}
-            <Animated.View 
-              style={[
-                styles.monthView,
-                {
-                  transform: [{ translateX: Animated.subtract(slideAnim, screenWidth) }]
-                }
-              ]}
-            >
-              {prevMonthGrid}
-            </Animated.View>
-            
-            {/* 현재 달 */}
-            <Animated.View 
-              style={[
-                styles.monthView,
-                {
-                  transform: [{ translateX: slideAnim }]
-                }
-              ]}
-            >
-              {currentMonthGrid}
-            </Animated.View>
-            
-            {/* 다음 달 */}
-            <Animated.View 
-              style={[
-                styles.monthView,
-                {
-                  transform: [{ translateX: Animated.add(slideAnim, screenWidth) }]
-                }
-              ]}
-            >
-              {nextMonthGrid}
-            </Animated.View>
-          </View>
-        </PanGestureHandler>
+          <Animated.View 
+            style={[
+              styles.bottomSheet, 
+              {
+                height: bottomSheetHeight,
+              }
+            ]}
+          >
+            <View style={styles.bottomSheetHandle} />
+            <View style={styles.bottomSheetContent}>            
+              <View style={styles.tabContainer}>
+                {['식단', '운동', '신체'].map((tab) => (
+                  <TouchableOpacity
+                    key={tab}
+                    style={[
+                      styles.tabButton,
+                      activeTab === tab && styles.activeTabButton
+                    ]}
+                    onPress={() => setActiveTab(tab)}
+                  >
+                    <Text style={[
+                      styles.tabButtonText,
+                      activeTab === tab && styles.activeTabButtonText
+                    ]}>
+                      {tab} {recordList.filter(x=>x.type===tab).length}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+      {Array.isArray(recordList) && recordList.filter(x=>x.type===activeTab).length === 0 && (
+        <View style={{marginTop:20}}>
+          <Text style={{textAlign:'center',fontSize:15}}>아직 등록된 기록이 없습니다.</Text>
+          <Text style={{textAlign:'center',fontSize:15}}>+ 버튼을 클릭하여 등록하세요.</Text>          
+        </View>
       )}
 
-      <PanGestureHandler
-        onGestureEvent={handleBottomSheetGesture}
-        onHandlerStateChange={(event) => {
-          if (event.nativeEvent.state === 5) {
-            handleBottomSheetEnd(event);
-          }
-        }}
-      >
-        <Animated.View 
-          style={[
-            styles.bottomSheet, 
-            {
-              height: bottomSheetHeight,
-            }
-          ]}
-        >
-          <View style={styles.bottomSheetHandle} />
-          <View style={styles.bottomSheetContent}>            
-            <View style={styles.tabContainer}>
-              {['식단', '운동', '신체'].map((tab) => (
-                <TouchableOpacity
-                  key={tab}
-                  style={[
-                    styles.tabButton,
-                    activeTab === tab && styles.activeTabButton
-                  ]}
-                  onPress={() => setActiveTab(tab)}
-                >
-                  <Text style={[
-                    styles.tabButtonText,
-                    activeTab === tab && styles.activeTabButtonText
-                  ]}>
-                    {tab}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-            <Text style={styles.bottomSheetTitle}>선택된 날짜</Text>
-            <Text style={styles.selectedDateText}>{selectDate}</Text>            
+      {Array.isArray(recordList) && recordList.filter(x=>x.type===activeTab).length > 0 && (
+        recordList.filter(x=>x.type===activeTab).map((el, idx) => (
+          <View key={el.id ?? idx} style={{width:'100%',height:40,flexDirection:'row',alignItems:'center'}}>
+            <Text style={{marginRight:10}}>{idx+1}. </Text>
+            <Text style={{color:'#000',}}>{el.content}</Text>
+              <TouchableOpacity onPress={()=>{deleteRecord(el.id,el.date)}} style={{backgroundColor:"#E62727",width:30,height:30,borderRadius:10,alignItems:'center',justifyContent:'center',marginLeft:10}}>
+                <Ionicons name="close" size={25} color="#fff" />
+              </TouchableOpacity>
           </View>
-        </Animated.View>
-      </PanGestureHandler>
-    </GestureHandlerRootView>
+        ))
+      )}
+
+       
+            </View>
+          </Animated.View>
+        </PanGestureHandler>
+      </GestureHandlerRootView>
+      
+      <TouchableOpacity onPress={openModal} style={styles.plusBtnWrap}>
+        <View style={styles.plusBtn}>
+          <Text style={styles.plusBtnTxt}>+</Text>
+        </View>
+      </TouchableOpacity>
+      
+      <Modal animationType="slide" visible={isModalVisible} transparent={true}>
+        <TouchableWithoutFeedback onPress={dismissKeyboard}>
+          <View style={styles.modalOverlay}>
+            <TouchableWithoutFeedback onPress={() => {}}>
+              <View style={styles.modalView}>
+                {/* 헤더 */}
+                <View style={styles.modalHeader}>
+                  <Text style={styles.modalTitle}>기록등록</Text>
+                  <TouchableOpacity onPress={closeModal} style={styles.closeButton}>
+                    <Ionicons name="close" size={25} color="#555" />
+                  </TouchableOpacity>
+                </View>
+
+                {/* 탭 선택 */}
+                <View style={styles.modalTabContainer}>
+                  {['식단', '운동', '신체'].map((tab) => (
+                    <TouchableOpacity
+                      key={tab}
+                      style={[
+                        styles.modalTabButton,
+                        modalActiveTab === tab && styles.modalActiveTabButton
+                      ]}
+                      onPress={() => {
+                        setModalActiveTab(tab);
+                        dismissKeyboard();
+                      }}
+                    >
+                      <Text style={[
+                        styles.modalTabButtonText,
+                        modalActiveTab === tab && styles.modalActiveTabButtonText
+                      ]}>
+                        {tab}
+                      </Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+
+                {/* 선택된 날짜 표시 */}
+                <TouchableWithoutFeedback onPress={dismissKeyboard}>
+                  <View style={styles.selectedDateContainer}>
+                    <Text style={styles.dateLabel}>선택된 날짜</Text>
+                    <View style={styles.dateDisplayBox}>
+                      <Text style={styles.dateDisplayText}>
+                        {formatDateForDisplay(selectDate)}
+                      </Text>
+                    </View>
+                  </View>
+                </TouchableWithoutFeedback>
+
+                {/* 내용 입력 */}
+                <View style={styles.contentContainer}>
+                  <Text style={styles.contentLabel}>{modalActiveTab} 내용</Text>
+                  <TextInput
+                    style={styles.contentInput}
+                    placeholder={`${modalActiveTab} 내용을 입력하세요...`}
+                    value={modalContent}
+                    onChangeText={setModalContent}
+                    multiline={true}
+                    textAlignVertical="top"
+                    returnKeyType="done"
+                    onSubmitEditing={dismissKeyboard}
+                    blurOnSubmit={true}
+                  />
+                </View>
+
+                {/* 버튼들 */}
+                <View style={styles.modalButtonContainer}>
+                  <TouchableOpacity 
+                    style={styles.cancelButton} 
+                    onPress={() => {
+                      dismissKeyboard();
+                      closeModal();
+                    }}
+                  >
+                    <Text style={styles.cancelButtonText}>취소</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity 
+                    style={[
+                      styles.saveButton,
+                      !modalContent.trim() && styles.disabledButton
+                    ]} 
+                    onPress={saveModalData}
+                    disabled={!modalContent.trim()}
+                  >
+                    <Text style={styles.saveButtonText}>저장</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </TouchableWithoutFeedback>
+          </View>
+        </TouchableWithoutFeedback>
+      </Modal>
+    </>
   );
 }
 
@@ -713,7 +962,6 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     borderWidth: 2,
     backgroundColor: "none",
-
   },
   todayText: {
     color: "white",
@@ -825,5 +1073,165 @@ const styles = StyleSheet.create({
   activeTabButtonText: {
     color: "white",
     fontWeight: "600",
+  },
+  plusBtnWrap: {
+    position: 'absolute',
+    bottom: 140,
+    right: 10,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  plusBtn: {
+    backgroundColor: '#007AFF',
+    height: 60,
+    width: 60,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 30,
+  },
+  plusBtnTxt: {
+    fontSize: 30,
+    color: 'white',
+  },
+  // 모달 관련 스타일들
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalView: {
+    width: '90%',
+    maxHeight: '80%',
+    backgroundColor: 'white',
+    borderRadius: 20,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: {
+      width: 0,
+      height: 2,
+    },
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  modalTitle: {
+    fontWeight: 'bold',
+    fontSize: 20,
+    color: '#007AFF',
+  },
+  closeButton: {
+    padding: 5,
+  },
+  modalTabContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 20,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 10,
+    padding: 4,
+  },
+  modalTabButton: {
+    flex: 1,
+    paddingVertical: 10,
+    paddingHorizontal: 15,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  modalActiveTabButton: {
+    backgroundColor: '#007AFF',
+  },
+  modalTabButtonText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#666',
+  },
+  modalActiveTabButtonText: {
+    color: 'white',
+    fontWeight: '600',
+  },
+  selectedDateContainer: {
+    marginBottom: 20,
+  },
+  dateLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  dateDisplayBox: {
+    padding: 12,
+    borderWidth: 1,
+    borderColor: '#007AFF',
+    borderRadius: 8,
+    backgroundColor: '#f0f8ff',
+  },
+  dateDisplayText: {
+    fontSize: 16,
+    color: '#007AFF',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  contentContainer: {
+    marginBottom: 20,
+  },
+  contentLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 8,
+  },
+  contentInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    height: 120,
+    backgroundColor: '#f9f9f9',
+  },
+  modalButtonContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 10,
+  },
+  cancelButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#f5f5f5',
+    alignItems: 'center',
+  },
+  cancelButtonText: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  saveButton: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 8,
+    backgroundColor: '#007AFF',
+    alignItems: 'center',
+  },
+  disabledButton: {
+    backgroundColor: '#ccc',
+  },
+  saveButtonText: {
+    fontSize: 16,
+    color: 'white',
+    fontWeight: '600',
   },
 });
