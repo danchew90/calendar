@@ -1,18 +1,16 @@
-// App.js
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { createStackNavigator } from '@react-navigation/stack';
 import { Ionicons } from '@expo/vector-icons';
+import React from 'react';
 
 import { Home } from './src/screen/Home';
 import { Calendar } from './src/screen/Calendar';
 import { Library } from './src/screen/Library';
 import { MyPage } from './src/screen/MyPage';
 
-
 const Tab = createBottomTabNavigator();
 const Stack = createStackNavigator();
-
 
 const createStack = (ScreenComponent, screenName) => {
   return function StackNavigator() {
@@ -36,8 +34,6 @@ const createStack = (ScreenComponent, screenName) => {
     );
   };
 };
-
-// 메인 Tab Navigator
 export default function App() {
   return (
     <NavigationContainer>
@@ -66,12 +62,34 @@ export default function App() {
             height: 60,
             marginBottom: 35,
           },
+          unmountOnBlur: true,
         })}
+        screenListeners={{
+          tabPress: (e) => {
+            console.log('🔄 탭 전환:', e.target?.split('-')[0]);
+          },
+        }}
       >
-        <Tab.Screen name="Calendar" component={createStack(Calendar, "Calendar")} options={{ title: 'Calendar' }}/>
-        <Tab.Screen name="Home" component={createStack(Home, "Home")} options={{ title: 'Home' }}/>
-        <Tab.Screen name="Library" component={createStack(Library, "Library")} options={{ title: 'Library' }}/>
-        <Tab.Screen name="MyPage" component={createStack(MyPage, "MyPage")} options={{ title: 'MyPage' }}/>
+        <Tab.Screen 
+          name="Home" 
+          component={createStack(Home, "Home")} 
+          options={{ title: 'Home' }}
+        />
+        <Tab.Screen 
+          name="Calendar" 
+          component={createStack(Calendar, "Calendar")} 
+          options={{ title: 'Calendar' }}
+        />
+        <Tab.Screen 
+          name="Library" 
+          component={createStack(Library, "Library")} 
+          options={{ title: 'Library' }}
+        />
+        <Tab.Screen 
+          name="MyPage" 
+          component={createStack(MyPage, "MyPage")} 
+          options={{ title: 'MyPage' }}
+        />
       </Tab.Navigator>
     </NavigationContainer>
   );

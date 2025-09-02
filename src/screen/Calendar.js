@@ -635,6 +635,7 @@ const deleteRecord = async (recordId, date) => {
 };
   useEffect(() => {initData()},[initData])
   
+  
   return (    
     <>
       <GestureHandlerRootView style={styles.container}>
