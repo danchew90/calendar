@@ -18,25 +18,25 @@ export function Calendar() {
   const [selectDate, setSelectDate] = useState(today);
   const [isModalVisible,setIsModalVisible] = useState(false);
   
-  // 모달 관련 state
+  
   const [modalActiveTab, setModalActiveTab] = useState('식단');
   const [modalContent, setModalContent] = useState('');
   
   const screenHeight = Dimensions.get('window').height;
   const screenWidth = Dimensions.get('window').width;
   
-  // 동적으로 최대 높이 계산 (헤더 + 요일 헤더 + 캘린더 한 줄)
-  const headerHeight = 50 + 15 * 2; // paddingTop + paddingVertical
-  const titleHeight = 24 + 10; // fontSize + marginBottom 
-  const weekHeaderHeight = 16 + 10 * 2; // fontSize + paddingVertical
-  const oneWeekRowHeight = 50 + 4; // dayCell height + margin
-  const reservedHeight = headerHeight + titleHeight + weekHeaderHeight + oneWeekRowHeight + 115; // 여유 공간
+  
+  const headerHeight = 50 + 15 * 2; 
+  const titleHeight = 24 + 10; 
+  const weekHeaderHeight = 16 + 10 * 2; 
+  const oneWeekRowHeight = 50 + 4; 
+  const reservedHeight = headerHeight + titleHeight + weekHeaderHeight + oneWeekRowHeight + 115; 
   const maxBottomSheetHeight = screenHeight - reservedHeight;
   
-  // 버튼이 보이도록 최소 높이 계산
-  const tabButtonHeight = 40; // paddingVertical * 2 + fontSize
-  const handleHeight = 4 + 16; // handle height + margins
-  const minRequiredHeight = handleHeight + 20 + tabButtonHeight + 20; // handle + margin + button + margin
+  
+  const tabButtonHeight = 40; 
+  const handleHeight = 4 + 16; 
+  const minRequiredHeight = handleHeight + 20 + tabButtonHeight + 20; 
   const minBottomSheetHeight = Math.max(screenHeight * 0.1, minRequiredHeight);
   
   const bottomSheetHeight = useRef(new Animated.Value(minBottomSheetHeight)).current;
@@ -51,20 +51,20 @@ export function Calendar() {
   const [activeTab, setActiveTab] = useState('식단');
   const [recordList,setRecordList] = useState([]);
 
-  // 날짜 포맷팅 함수
+  
   const formatDateForDisplay = (dateString) => {
     const [year, month, day] = dateString.split('-');
     return `${year}년 ${month}월 ${day}일`;
   };
 
-  // 모달 열기 함수
+  
   const openModal = () => {
     setModalActiveTab('식단');
     setModalContent('');
     setIsModalVisible(true);
   };
 
-  // 모달 닫기 함수
+  
   const closeModal = () => {
     setIsModalVisible(false);
     setModalActiveTab('식단');
@@ -72,17 +72,17 @@ export function Calendar() {
     loadTodata();
   };
 
-  // 키보드 닫기 함수
+  
   const dismissKeyboard = () => {
     Keyboard.dismiss();
   };
 
-  // 저장 함수
+  
 const saveModalData = async () => {
   if (!modalContent.trim()) return;
   
   try {
-    // 키보드 먼저 닫기
+    
     Keyboard.dismiss();
     
     const data = {
@@ -94,15 +94,15 @@ const saveModalData = async () => {
     
 
     
-    // 현재 년도/월 계산
+    
     
     const storageKey = `CALENDAR_${yearArr[currentYearIndex]}_${currentMonth}`;
     
-    // 기존 데이터 로드
+    
     const existingData = await AsyncStorage.getItem(storageKey);
     let monthRecords = existingData ? JSON.parse(existingData) : [];
     
-    // 새 기록 추가
+    
     const newRecord = {
       id: Date.now() + Math.random(),
       ...data,
@@ -111,10 +111,10 @@ const saveModalData = async () => {
     
     monthRecords.push(newRecord);
     
-    // 날짜순 정렬
+    
     monthRecords.sort((a, b) => a.day - b.day);
     
-    // 저장
+    
     await AsyncStorage.setItem(storageKey, JSON.stringify(monthRecords));
     
     console.log('✅ 저장 완료!');
@@ -133,12 +133,12 @@ const loadTodata = async () => {
     setRecordList(parsed);
   } catch (error) {
     console.error("불러오기 실패:", error);
-    setRecordList([]); // fallback
+    setRecordList([]); 
   }
 };
 
 
-// useEffect(()=>{},[recordList])
+
 
   const initData = useCallback(() => {
     const newCalData = yearArr.map((y) => {
@@ -164,7 +164,7 @@ const loadTodata = async () => {
   }, [yearArr, updateAdjacentMonthData]);
 
   const updateAdjacentMonthData = useCallback((calendarData) => {
-    // 이전 달 데이터
+    
     let prevYear = currentYearIndex;
     let prevMonth = currentMonth - 1;
     if (prevMonth < 0) {
@@ -172,7 +172,7 @@ const loadTodata = async () => {
       prevYear = currentYearIndex - 1;
     }
     
-    // 다음 달 데이터
+    
     let nextYear = currentYearIndex;
     let nextMonth = currentMonth + 1;
     if (nextMonth > 11) {
@@ -231,7 +231,7 @@ const loadTodata = async () => {
           setCurrentYearIndex(currentYearIndex - 1);
           setCurrentMonth(11);
         } else {
-          // 년도를 확장하고 데이터 재설정
+          
           const newYearArr = [yearArr[0] - 1, ...yearArr];
           setYearArr(newYearArr);
           setCurrentYearIndex(1);
@@ -250,7 +250,7 @@ const loadTodata = async () => {
           setCurrentYearIndex(currentYearIndex + 1);
           setCurrentMonth(0);
         } else {
-          // 년도를 확장하고 데이터 재설정
+          
           const newYearArr = [...yearArr, yearArr[yearArr.length - 1] + 1];
           setYearArr(newYearArr);
           setCurrentMonth(0);
@@ -370,14 +370,14 @@ const loadTodata = async () => {
     const handleScrollEnd = (event) => {
       const currentTime = Date.now();
       
-      // 애니메이션 중이거나 최근 스크롤 이벤트가 있었으면 무시
+      
       if (isAnimating || currentTime - lastScrollTime.current < 1000) return;
       
       const contentOffsetX = event.nativeEvent.contentOffset.x;
       const contentWidth = event.nativeEvent.contentSize.width;
       const layoutWidth = event.nativeEvent.layoutMeasurement.width;
       
-      // 더 엄격한 조건으로 끝점 확인
+      
       const isAtEnd = contentOffsetX + layoutWidth >= contentWidth - 5;
       const isAtStart = contentOffsetX <= 5;
       
@@ -435,7 +435,7 @@ const loadTodata = async () => {
     );
   };
 
-  // 캘린더 데이터를 미리 메모화
+  
   const currentMonthGrid = useMemo(() => {
     return renderCalendarGrid();
   }, [calData, currentYearIndex, currentMonth, selectDate]);
@@ -453,11 +453,11 @@ const loadTodata = async () => {
     
     const { translationX, translationY } = event.nativeEvent;
     
-    // 위로 올리는 제스처만 캘린더에서 처리 (바텀시트 확장)
+    
     if (translationY < 0 && Math.abs(translationY) > Math.abs(translationX)) {
       handleBottomSheetGesture(event);
     } else if (Math.abs(translationX) > Math.abs(translationY)) {
-      // 가로 제스처 (캘린더 슬라이드)
+      
       slideAnim.setValue(translationX);
     }
   };
@@ -467,16 +467,16 @@ const loadTodata = async () => {
     
     const { translationX, translationY, velocityX, velocityY } = event.nativeEvent;
     
-    // 위로 올리는 제스처만 캘린더에서 처리
+    
     if (translationY < 0 && Math.abs(translationY) > Math.abs(translationX)) {
       handleBottomSheetEnd(event);
     } else if (Math.abs(translationX) > Math.abs(translationY)) {
-      // 가로 제스처 (캘린더 슬라이드)
+      
       const threshold = screenWidth * 0.3;
       
       if (Math.abs(translationX) > threshold || Math.abs(velocityX) > 1000) {
         if (translationX > 0) {
-          // 오른쪽으로 스와이프 - 이전 달
+          
           setIsAnimating(true);
           Animated.timing(slideAnim, {
             toValue: screenWidth,
@@ -488,7 +488,7 @@ const loadTodata = async () => {
             setIsAnimating(false);
           });
         } else {
-          // 왼쪽으로 스와이프 - 다음 달
+          
           setIsAnimating(true);
           Animated.timing(slideAnim, {
             toValue: -screenWidth,
@@ -501,7 +501,7 @@ const loadTodata = async () => {
           });
         }
       } else {
-        // 원래 위치로 복귀
+        
         Animated.spring(slideAnim, {
           toValue: 0,
           useNativeDriver: true,
@@ -528,13 +528,13 @@ const loadTodata = async () => {
       setCurrentMonth(currentMonth - 1);
     }
 
-    // 렌더링 완료 후 스크롤 위치 조정
+    
     setTimeout(() => {
       if (isBottomSheetExpanded && horizontalScrollRef.current) {
         horizontalScrollRef.current?.scrollToEnd({ animated: false });
       }
       setIsAnimating(false);
-      lastScrollTime.current = Date.now(); // 스크롤 시간 업데이트
+      lastScrollTime.current = Date.now(); 
     }, 300);
   };
 
@@ -554,21 +554,21 @@ const loadTodata = async () => {
       setCurrentMonth(currentMonth + 1);
     }
 
-    // 렌더링 완료 후 스크롤 위치 조정
+    
     setTimeout(() => {
       if (isBottomSheetExpanded && horizontalScrollRef.current) {
         horizontalScrollRef.current?.scrollTo({ x: 0, animated: false });
       }
       setIsAnimating(false);
-      lastScrollTime.current = Date.now(); // 스크롤 시간 업데이트
+      lastScrollTime.current = Date.now(); 
     }, 300);
   };
 
   const handleBottomSheetGesture = (event) => {
     const { translationY } = event.nativeEvent;
     const currentHeight = bottomSheetHeight._value;
-    const minHeight = minBottomSheetHeight; // 버튼이 보이는 최소 높이 사용
-    const maxHeight = maxBottomSheetHeight; // 동적으로 계산된 높이 사용
+    const minHeight = minBottomSheetHeight; 
+    const maxHeight = maxBottomSheetHeight; 
     
     let newHeight = currentHeight - translationY;
     newHeight = Math.max(minHeight, Math.min(maxHeight, newHeight));
@@ -579,8 +579,8 @@ const loadTodata = async () => {
   const handleBottomSheetEnd = (event) => {
     const { translationY } = event.nativeEvent;
     const currentHeight = bottomSheetHeight._value;
-    const minHeight = minBottomSheetHeight; // 버튼이 보이는 최소 높이 사용
-    const maxHeight = maxBottomSheetHeight; // 동적으로 계산된 높이 사용
+    const minHeight = minBottomSheetHeight; 
+    const maxHeight = maxBottomSheetHeight; 
     const midHeight = (minHeight + maxHeight) / 2;
     
     let targetHeight;
@@ -604,7 +604,7 @@ const deleteRecord = async (recordId, date) => {
     const [year, month] = date.split('-').map(Number);
     const storageKey = `CALENDAR_${year}_${month-1}`;
     
-    // 해당 월 데이터 로드
+    
     const existingData = await AsyncStorage.getItem(storageKey);
     
     if (!existingData) {
@@ -614,16 +614,16 @@ const deleteRecord = async (recordId, date) => {
     
     const monthRecords = JSON.parse(existingData);
     
-    // 해당 ID 기록 삭제
+    
     const updatedRecords = monthRecords.filter(record => record.id !== recordId);
     
-    // 삭제된 기록이 있는지 확인
+    
     if (updatedRecords.length === monthRecords.length) {
       console.log('삭제할 기록을 찾을 수 없습니다.');
       return false;
     }
     
-    // 업데이트된 데이터 저장
+    
     await AsyncStorage.setItem(storageKey, JSON.stringify(updatedRecords));
     
     console.log(`✅ 기록 삭제됨 - ID: ${recordId}`);
@@ -663,12 +663,12 @@ const deleteRecord = async (recordId, date) => {
         )}
 
         {isBottomSheetExpanded ? (
-          // 바텀시트 확장 시 - 가로 스크롤 캘린더
+          
           <View style={styles.horizontalCalendarWrapper}>
             {renderHorizontalCalendar()}
           </View>
         ) : (
-          // 바텀시트 축소 시 - 기존 그리드 캘린더  
+          
           <PanGestureHandler
             onGestureEvent={handleCalendarSwipe}
             onHandlerStateChange={(event) => {
@@ -764,7 +764,7 @@ const deleteRecord = async (recordId, date) => {
       {Array.isArray(recordList) && recordList.filter(x=>x.type===activeTab).length > 0 && (
         recordList.filter(x=>x.type===activeTab).map((el, idx) => (
           <View key={el.id ?? idx} style={{width:'100%',height:40,flexDirection:'row',alignItems:'center'}}>
-            <Text style={{marginRight:10}}>{idx+1}. </Text>
+            <Text style={{marginRight:10,fontWeight:'bold',color:"#007AFF"}}>{idx+1}. </Text>
             <Text style={{color:'#000',}}>{el.content}</Text>
               <TouchableOpacity onPress={()=>{deleteRecord(el.id,el.date)}} style={{backgroundColor:"#E62727",width:30,height:30,borderRadius:10,alignItems:'center',justifyContent:'center',marginLeft:10}}>
                 <Ionicons name="close" size={25} color="#fff" />
@@ -1099,7 +1099,7 @@ const styles = StyleSheet.create({
     fontSize: 30,
     color: 'white',
   },
-  // 모달 관련 스타일들
+  
   modalOverlay: {
     flex: 1,
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
