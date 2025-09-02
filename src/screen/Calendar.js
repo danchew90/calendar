@@ -767,6 +767,7 @@ const deleteRecord = async (recordId, date) => {
           <View key={el.id ?? idx} style={{width:'100%',height:40,flexDirection:'row',alignItems:'center'}}>
             <Text style={{marginRight:10,fontWeight:'bold',color:"#007AFF"}}>{idx+1}. </Text>
             <Text style={{color:'#000',}}>{el.content}</Text>
+            <Text style={{color:'#666',marginLeft:10,fontSize:10}}>({el.date})</Text>
               <TouchableOpacity onPress={()=>{deleteRecord(el.id,el.date)}} style={{backgroundColor:"#E62727",width:30,height:30,borderRadius:10,alignItems:'center',justifyContent:'center',marginLeft:10}}>
                 <Ionicons name="close" size={25} color="#fff" />
               </TouchableOpacity>
