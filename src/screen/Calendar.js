@@ -129,7 +129,7 @@ const loadTodata = async () => {
     const storageKey = `CALENDAR_${yearArr[currentYearIndex]}_${currentMonth}`;
     const stored = await AsyncStorage.getItem(storageKey);
     const parsed = stored ? JSON.parse(stored) : [];
-    console.log("📌 불러온 데이터:", parsed);
+    console.log("📌 불러온 데이터:", parsed);    
     setRecordList(parsed);
   } catch (error) {
     console.error("불러오기 실패:", error);
@@ -600,9 +600,10 @@ const loadTodata = async () => {
     }).start();
   };
 const deleteRecord = async (recordId, date) => {
+  
   try {
     const [year, month] = date.split('-').map(Number);
-    const storageKey = `CALENDAR_${year}_${month-1}`;
+    const storageKey = `CALENDAR_${year}_${currentMonth}`;
     
     
     const existingData = await AsyncStorage.getItem(storageKey);
