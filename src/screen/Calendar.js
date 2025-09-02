@@ -757,7 +757,7 @@ const deleteRecord = async (recordId, date) => {
               </View>
       {Array.isArray(recordList) && recordList.filter(x=>x.type===activeTab).length === 0 && (
         <View style={{marginTop:20}}>
-          <Text style={{textAlign:'center',fontSize:15}}>아직 등록된 기록이 없습니다.</Text>
+          <Text style={{textAlign:'center',fontSize:15}}>아직 등록된 <Text style={{color:'#007AFF',fontWeight:'bold'}}>{activeTab}</Text> 기록이 없습니다.</Text>
           <Text style={{textAlign:'center',fontSize:15}}>+ 버튼을 클릭하여 등록하세요.</Text>          
         </View>
       )}
